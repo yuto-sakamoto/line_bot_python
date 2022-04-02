@@ -25,6 +25,7 @@ provider "aws" {
 }
 
 # IAM
+## policy
 resource "aws_iam_policy" "dynamodb_put_policy" {
   name        = "dynamodb_put_policy"
   path        = "/"
@@ -46,4 +47,16 @@ resource "aws_iam_policy" "dynamodb_put_policy" {
       },
     ]
   })
+}
+
+## user
+resource "aws_iam_user" "dynamodb_user" {
+  name = "dynamodb_user"
+  tags = local.tags
+
+}
+
+resource "aws_iam_user_policy_attachment" "attach" {
+  user       = aws_iam_user.dynamodb_user.name
+  policy_arn = aws_iam_policy.dynamodb_put_policy.arn
 }
