@@ -24,8 +24,11 @@ provider "aws" {
   profile = var.aws_profile
 }
 
+# terraform use user
+data "aws_caller_identity" "current" {}
 # IAM
 ## policy
+### dynamodb用
 resource "aws_iam_policy" "dynamodb_put_policy" {
   name        = "dynamodb_put_policy"
   path        = "/"
@@ -44,6 +47,53 @@ resource "aws_iam_policy" "dynamodb_put_policy" {
         ]
         Effect   = "Allow"
         Resource = "*"
+      },
+    ]
+  })
+}
+### lambda用
+resource "aws_iam_policy" "lambda_policy" {
+  name        = "lambda_policy"
+  path        = "/"
+  description = "Lambda policy"
+  tags        = local.tags
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:DescribeTable",
+          "dynamodb:CreateTable",
+          "dynamodb:GetItem",
+          "dynamodb:DeleteItem",
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:dynamodb:ap-northeast-1:${data.aws_caller_identity.current.account_id}:table/UserScore"
+      },
+      {
+        Action = [
+          "dynamodb:GetItem",
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:dynamodb:ap-northeast-1:${data.aws_caller_identity.current.account_id}:table/Score"
+      },
+      {
+        Action = [
+          "logs:CreateLogGroup",
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:logs:ap-northeast-1:${data.aws_caller_identity.current.account_id}:*"
+      },
+      {
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:logs:ap-northeast-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/line_bot_python:*"
       },
     ]
   })
