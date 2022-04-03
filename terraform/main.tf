@@ -99,13 +99,34 @@ resource "aws_iam_policy" "lambda_policy" {
   })
 }
 
+#role
+resource "aws_iam_role" "lambda_role" {
+  name = "lambda_role"
+
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      },
+    ]
+  })
+  managed_policy_arns = [aws_iam_policy.lambda_policy.arn]
+  tags                = local.tags
+}
 ## user
 resource "aws_iam_user" "dynamodb_user" {
   name = "dynamodb_user"
   tags = local.tags
 
 }
-
 resource "aws_iam_user_policy_attachment" "attach" {
   user       = aws_iam_user.dynamodb_user.name
   policy_arn = aws_iam_policy.dynamodb_put_policy.arn
