@@ -10,6 +10,8 @@ terraform {
 # 変数定義
 variable "aws_region" {}
 variable "aws_profile" {}
+variable "channel_secret" {}
+variable "channel_access_token" {}
 #default_tags
 locals {
   tags = {
@@ -130,4 +132,26 @@ resource "aws_iam_user" "dynamodb_user" {
 resource "aws_iam_user_policy_attachment" "attach" {
   user       = aws_iam_user.dynamodb_user.name
   policy_arn = aws_iam_policy.dynamodb_put_policy.arn
+}
+
+# lambda
+resource "aws_lambda_function" "line_bot_lambda" {
+  filename      = "../main.py.zip"
+  function_name = "line_bot_python"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "index.test"
+
+  # The filebase64sha256() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
+  # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
+  source_code_hash = filebase64sha256("../main.py.zip")
+
+  runtime = "python3.9"
+
+  environment {
+    variables = {
+      CHANNEL_SECRET       = var.channel_secret
+      CHANNEL_ACCESS_TOKEN = var.channel_access_token
+    }
+  }
 }
